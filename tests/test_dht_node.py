@@ -197,7 +197,7 @@ def test_empty_table():
 def test_dht_node():
     # step A: create a swarm of 50 dht nodes in separate processes
     #         (first 5 created sequentially, others created in parallel)
-    processes, dht, swarm_maddrs = launch_swarm_in_separate_processes(n_peers=50, n_sequential_peers=5)
+    processes, dht, swarm_maddrs = launch_swarm_in_separate_processes(n_peers=20, n_sequential_peers=5)
 
     # step B: run 51-st node in this process
     loop = asyncio.get_event_loop()
