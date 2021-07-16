@@ -49,7 +49,7 @@ def test_store_get_experts(n_peers=10):
 
 @pytest.mark.forked
 def test_beam_search(
-    n_peers=20, total_experts=128, batch_size=32, beam_size=4, parallel_rpc=4, grid_dims=(32, 32, 32)
+    n_peers=20, total_experts=64, batch_size=32, beam_size=4, parallel_rpc=4, grid_dims=(32, 32, 32)
 ):
     dht = [hivemind.DHT(start=True)]
     initial_peers = dht[0].get_visible_maddrs()
