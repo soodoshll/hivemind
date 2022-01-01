@@ -194,7 +194,7 @@ class Optimizer(torch.optim.Optimizer):
         average_opt_statistics: Sequence[str] = (),
         extra_tensors: Sequence[torch.Tensor] = (),
         averager_opts: Optional[dict] = None,
-        grad_averager_opts: Optional[dict] = dict(),
+        grad_averager_opts: Optional[dict] = None,
         tracker_opts: Optional[dict] = None,
         performance_ema_alpha: float = 0.1,
         shutdown_timeout: float = 5,
@@ -248,7 +248,7 @@ class Optimizer(torch.optim.Optimizer):
             assert len(extra_tensors) == 0
             grad_extra_tensors = [
                 torch.zeros_like(param, device="cpu")
-                for param_group in optimizer.param_groups
+                for param_group in params
                 for param in param_group["params"]
             ]
             for tensor in grad_extra_tensors:

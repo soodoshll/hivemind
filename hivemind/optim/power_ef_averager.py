@@ -213,7 +213,7 @@ class PowerEFGradientAverager(GradientAverager):
         grad_scale = (1.0 / self.local_times_accumulated) if self.local_times_accumulated != 0 else 0.0
         with self.get_tensors() as averaged_grads:
             for grad_acc, averaged_grad, rest in zip(self._grad_accumulators(), averaged_grads, self._gradient_rests):
-                torch.sub(grad_acc * grad_scale, averaged_grad, out=rest)
+                rest.copy_(grad_acc, non_blocking=False).mul_(grad_scale).sub_(averaged_grad)
 
 
 @torch.jit.script
