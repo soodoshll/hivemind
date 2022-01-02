@@ -95,7 +95,6 @@ class OptimizerArguments:
         default=5.0, metadata={"help": "When looking for group, wait for requests for at least this many seconds"}
     )
 
-
 @dataclass
 class CollaborationArguments(OptimizerArguments, BaseTrainingArguments):
     statistics_expiration: float = field(
@@ -103,6 +102,9 @@ class CollaborationArguments(OptimizerArguments, BaseTrainingArguments):
     )
     backup_every_steps: int = field(
         default=10, metadata={"help": "Frequency of backups to restore from in case of encountering NaN values"}
+    )
+    average_state_step: int = field(
+        default=1, metadata={"help": "interval of state averaging"}
     )
 
 

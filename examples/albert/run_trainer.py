@@ -282,6 +282,7 @@ def main():
         averager_opts={"bandwidth": collaboration_args.bandwidth, **asdict(averager_args)},
         tracker_opts=asdict(tracker_args),
         verbose=True,
+        average_state_every=collaboration_args.average_state_step,
     )
 
     class TrainerWithIndependentShuffling(Trainer):
