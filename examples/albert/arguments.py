@@ -95,6 +95,7 @@ class OptimizerArguments:
         default=5.0, metadata={"help": "When looking for group, wait for requests for at least this many seconds"}
     )
 
+
 @dataclass
 class CollaborationArguments(OptimizerArguments, BaseTrainingArguments):
     statistics_expiration: float = field(
@@ -105,6 +106,12 @@ class CollaborationArguments(OptimizerArguments, BaseTrainingArguments):
     )
     average_state_step: int = field(
         default=1, metadata={"help": "interval of state averaging"}
+    )
+    grad_rank_averager: str = field(
+        default="normal", metadata={"help": "use 'power_ef' to enable the PowerEF compression"}
+    )
+    averager_rank: int = field(
+        default=32, metadata={"help": "rank used in powerEF"}
     )
 
 

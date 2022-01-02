@@ -279,10 +279,13 @@ def main():
         client_mode=collaboration_args.client_mode,
         grad_compression=Float16Compression(),
         state_averaging_compression=Float16Compression(),
-        averager_opts={"bandwidth": collaboration_args.bandwidth, **asdict(averager_args)},
+        averager_opts={"bandwidth": collaboration_args.bandwidth, 
+        "averager_rank":collaboration_args.averager_rank,
+        **asdict(averager_args)},
         tracker_opts=asdict(tracker_args),
         verbose=True,
         average_state_every=collaboration_args.average_state_step,
+        grad_rank_averager=collaboration_args.grad_rank_averager,
     )
 
     class TrainerWithIndependentShuffling(Trainer):
