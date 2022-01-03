@@ -113,6 +113,10 @@ class CollaborationArguments(OptimizerArguments, BaseTrainingArguments):
     averager_rank: int = field(
         default=32, metadata={"help": "rank used in powerEF"}
     )
+    mixed_8bit_compression: bool = field(
+        default=False,
+        metedata={"help": "enable mixed 8bit compression"}
+    )
 
 
 @dataclass

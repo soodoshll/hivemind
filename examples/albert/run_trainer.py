@@ -20,6 +20,8 @@ from transformers.trainer_utils import is_main_process
 from hivemind import DHT, Float16Compression, Optimizer, get_dht_time
 from hivemind.utils.logging import get_logger, use_hivemind_log_handler
 
+from hivemind import Float16Compression, SizeAdaptiveCompression, Uniform8BitQuantization
+
 import utils
 from arguments import (
     AlbertTrainingArguments,
@@ -34,6 +36,9 @@ logger = get_logger(__name__)
 
 LRSchedulerBase = getattr(torch.optim.lr_scheduler, "_LRScheduler", None)
 
+averaging_compression = SizeAdaptiveCompression(
+        threshold=2 ** 16 + 1, less=Float16Compression(), greater_equal=Uniform8BitQuantization())
+state_compression = Float16Compression()
 
 def setup_transformers_logging(process_rank: int):
     if is_main_process(process_rank):
@@ -277,7 +282,7 @@ def main():
         delay_optimizer_step=True,
         delay_grad_averaging=True,
         client_mode=collaboration_args.client_mode,
-        grad_compression=Float16Compression(),
+        grad_compression=averaging_compression if collaboration_args.mixed_8bit_compression else Float16Compression(),
         state_averaging_compression=Float16Compression(),
         averager_opts={"bandwidth": collaboration_args.bandwidth, 
         **asdict(averager_args)},
