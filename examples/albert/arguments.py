@@ -115,7 +115,7 @@ class CollaborationArguments(OptimizerArguments, BaseTrainingArguments):
     )
     mixed_8bit_compression: bool = field(
         default=False,
-        metedata={"help": "enable mixed 8bit compression"}
+        metadata={"help": "enable mixed 8bit compression"}
     )
 
 
