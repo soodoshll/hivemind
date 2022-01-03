@@ -290,7 +290,7 @@ def main():
         verbose=True,
         average_state_every=collaboration_args.average_state_step,
         grad_rank_averager=collaboration_args.grad_rank_averager,
-        grad_averager_opts={"averager_rank":collaboration_args.averager_rank}
+        grad_averager_opts={"averager_rank":collaboration_args.averager_rank} if collaboration_args.grad_rank_averager == 'power_ef' else {}
         )
 
     class TrainerWithIndependentShuffling(Trainer):
