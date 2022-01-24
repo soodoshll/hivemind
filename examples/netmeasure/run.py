@@ -11,7 +11,7 @@ import torch_optimizer
 import argparse
 
 parser = argparse.ArgumentParser(description='Process some integers.')
-parser.add_argument('--initial_peers', type=list)
+parser.add_argument('--initial_peers', type=str)
 args = parser.parse_args()
 print(args.initial_peers)
 
@@ -30,8 +30,9 @@ albert_xxlarge_configuration = AlbertConfig()
 
 
 model = AlbertModel(albert_large_configuration)
-# device = torch.device('cuda')
-# model.to(device)
+model.half()
+device = torch.device('cuda')
+model.to(device)
 
 opt = torch_optimizer.Lamb(model.parameters())
 inputs = torch.randint(0,10, [1, 128])
@@ -45,7 +46,7 @@ print(opt.state_dict()['state'][0].keys())
 print(f"#param: {sum([param.data.numel() for param in model.parameters()])}")
 
 # distributed environment setting
-dht = hivemind.DHT(start=True, host_maddrs=["/ip4/0.0.0.0/tcp/0"], initial_peers=args.initial_peers)
+dht = hivemind.DHT(start=True, host_maddrs=["/ip4/0.0.0.0/tcp/0"], initial_peers=[args.initial_peers])
 print('\n'.join(str(addr) for addr in dht.get_visible_maddrs()))
 print("Global IP:", hivemind.utils.networking.choose_ip_address(dht.get_visible_maddrs()))
 
