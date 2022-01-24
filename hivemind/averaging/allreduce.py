@@ -231,7 +231,7 @@ class AllReduceRunner(ServicerBase):
 
         else:
             try:
-                logger.info(f"communication start")
+                # logger.info(f"communication start")
                 start_t = time.time()
                 done_sending = asyncio.Event()
                 inputs_aiter = attach_event_on_finished(self._generate_input_for_peer(peer_index), done_sending)
@@ -261,10 +261,10 @@ class AllReduceRunner(ServicerBase):
                     async with lock:
                         tot_sz += sz
                     self.tensor_part_container.register_processed_part(peer_index, part_index, delta)
-                    logger.info(f"communication bp: {time.time() - start_t : .2f}")
+                    # logger.info(f"communication bp: {time.time() - start_t : .2f}")
                     part_index += 1
-                logger.info(f"total message size: {tot_sz}")
-                logger.info(f"communication bp1: {time.time() - start_t : .2f}")
+                # logger.info(f"total message size: {tot_sz}")
+                # logger.info(f"communication bp1: {time.time() - start_t : .2f}")
                 if part_index != self.tensor_part_container.num_parts_by_peer[peer_index]:
                     raise AllreduceException(
                         f"peer {peer_id} sent {part_index} parts, but we expected "
