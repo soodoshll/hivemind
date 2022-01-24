@@ -31,8 +31,8 @@ albert_xxlarge_configuration = AlbertConfig()
 
 model = AlbertModel(albert_large_configuration)
 model.half()
-device = torch.device('cuda')
-model.to(device)
+# device = torch.device('cuda')
+# model.to(device)
 
 opt = torch_optimizer.Lamb(model.parameters())
 inputs = torch.randint(0,10, [1, 128])
