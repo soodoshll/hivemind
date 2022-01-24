@@ -18,6 +18,9 @@ from hivemind.utils.asyncio import (
     attach_event_on_finished,
 )
 
+import time
+from pyinstrument import Profiler
+
 # flavour types
 GroupID = bytes
 logger = get_logger(__name__)
@@ -170,6 +173,8 @@ class AllReduceRunner(ServicerBase):
             pending_tasks.add(asyncio.create_task(self._handle_missing_senders()))
 
         try:
+            start_t = time.time()
+            # with Profiler(async_mode='disabled') as p:
             if len(self.sender_peer_ids) == 0:
                 logger.debug(f"{self} - finished all-reduce early: all peers are auxiliaries ({self.modes})")
                 self.finalize()
@@ -178,16 +183,17 @@ class AllReduceRunner(ServicerBase):
                 for peer_id, parts in zip(self.ordered_peer_ids, self.tensor_part_container.num_parts_by_peer):
                     if parts != 0:
                         pending_tasks.add(asyncio.create_task(self._communicate_with_peer(peer_id)))
-
+                logger.info(f"all-reduce bp1: {time.time() - start_t: .2f}s")
                 async for averaged_tensor_delta in self.tensor_part_container.iterate_output_tensors():
                     yield averaged_tensor_delta  # delta = averaged_tensor - original_tensor
-
+                logger.info(f"all-reduce bp2: {time.time() - start_t: .2f}s")
                 self.finalize()
 
             else:  # auxiliary peer
                 await self.tensor_part_reducer.finished.wait()
                 self.finalize()
-
+            logger.info(f"all-reduce uses: {time.time() - start_t: .2f}s")
+            # p.print()
         except BaseException as e:
             self.finalize(exception=e)
             for task in pending_tasks:
@@ -225,6 +231,8 @@ class AllReduceRunner(ServicerBase):
 
         else:
             try:
+                logger.info(f"communication start")
+                start_t = time.time()
                 done_sending = asyncio.Event()
                 inputs_aiter = attach_event_on_finished(self._generate_input_for_peer(peer_index), done_sending)
                 stream = await self._get_peer_stub(peer_id).rpc_aggregate_part(inputs_aiter)
@@ -237,16 +245,26 @@ class AllReduceRunner(ServicerBase):
                 def _try_deserialize(msg):
                     if msg.code != averaging_pb2.AVERAGED_PART:
                         raise AllreduceException(f"{peer_id} sent {averaging_pb2.MessageCode.Name(msg.code)}")
-                    return deserialize_torch_tensor(msg.tensor_part), msg
-
-                async for delta, msg in amap_in_executor(
+                    # print(type(msg.tensor_part))
+                    # deserial_start = time.time()
+                    ret = deserialize_torch_tensor(msg.tensor_part)
+                    # logger.info(f'deserialize costs {time.time() - deserial_start : .2f}')
+                    # print(peer_id, type(msg), msg.ByteSize())
+                    return ret, msg, msg.ByteSize()
+                tot_sz = 0
+                lock = asyncio.Lock()
+                async for delta, msg, sz in amap_in_executor(
                     _try_deserialize,
                     aiter_with_timeout(stream, self.reducer_timeout),
                     max_prefetch=self.tensor_part_container.prefetch,
                 ):
+                    async with lock:
+                        tot_sz += sz
                     self.tensor_part_container.register_processed_part(peer_index, part_index, delta)
+                    logger.info(f"communication bp: {time.time() - start_t : .2f}")
                     part_index += 1
-
+                logger.info(f"total message size: {tot_sz}")
+                logger.info(f"communication bp1: {time.time() - start_t : .2f}")
                 if part_index != self.tensor_part_container.num_parts_by_peer[peer_index]:
                     raise AllreduceException(
                         f"peer {peer_id} sent {part_index} parts, but we expected "

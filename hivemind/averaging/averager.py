@@ -49,6 +49,8 @@ from hivemind.utils.grpc import combine_from_streaming, split_for_streaming
 from hivemind.utils.serializer import MSGPackSerializer, SerializerBase
 from hivemind.utils.timed_storage import DHTExpiration, ValueWithExpiration, get_dht_time
 
+from pyinstrument import Profiler
+
 # flavour types
 GatheredData = Any
 logger = get_logger(__name__)
@@ -461,6 +463,7 @@ class DecentralizedAverager(mp.Process, ServicerBase):
 
                     step.stage = AveragingStage.RUNNING_ALLREDUCE
 
+                    # with Profiler() as p:
                     start_t = time.time()
                     step.set_result(
                         await asyncio.wait_for(
@@ -471,7 +474,10 @@ class DecentralizedAverager(mp.Process, ServicerBase):
                         )
                     )
                     logger.info(f"Averaging uses time: {time.time() - start_t} s")
-                    
+                    # logger.info(f"profile: {p.output_text()}")
+                    # p.print()
+                    # with open("profile.txt", "w") as f:
+                        # p.print(file=f)
                     # averaging is finished, loop will now exit
 
                 except (
@@ -485,6 +491,7 @@ class DecentralizedAverager(mp.Process, ServicerBase):
                     DispatchFailure,
                     ControlFailure,
                 ) as e:
+                    print(e)
                     if step.done() or not step.allow_retries or get_dht_time() >= step.deadline:
                         if not step.cancelled():
                             logger.exception(e)
