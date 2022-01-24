@@ -50,9 +50,8 @@ print(args.initial_peers)
 model = nn.ParameterDict({"w": nn.Parameter(torch.zeros(args.nparam))})
 print(f"#param: {sum([param.data.numel() for param in model.parameters()])}")
 
-exit(0)
 # distributed environment setting
-dht = hivemind.DHT(start=True, host_maddrs=["/ip4/0.0.0.0/tcp/0"], initial_peers=args.initial_peers)
+dht = hivemind.DHT(start=True, host_maddrs=["/ip4/0.0.0.0/tcp/6324"], initial_peers=args.initial_peers)
 print('\n'.join(str(addr) for addr in dht.get_visible_maddrs()))
 print("Global IP:", hivemind.utils.networking.choose_ip_address(dht.get_visible_maddrs()))
 
