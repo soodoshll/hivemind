@@ -15,6 +15,7 @@ from typing import Any, AsyncIterator, Dict, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
+import time
 
 from hivemind.averaging.allreduce import AllreduceException, AllReduceRunner, AveragingMode, GroupID
 from hivemind.averaging.control import AveragingStage, StepControl
@@ -460,6 +461,7 @@ class DecentralizedAverager(mp.Process, ServicerBase):
 
                     step.stage = AveragingStage.RUNNING_ALLREDUCE
 
+                    start_t = time.time()
                     step.set_result(
                         await asyncio.wait_for(
                             self._run_allreduce(
@@ -468,6 +470,8 @@ class DecentralizedAverager(mp.Process, ServicerBase):
                             timeout=self._allreduce_timeout,
                         )
                     )
+                    logger.info(f"Averaging uses time: {time.time() - start_t} s")
+                    
                     # averaging is finished, loop will now exit
 
                 except (

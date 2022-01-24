@@ -131,6 +131,18 @@ class AllReduceRunner(ServicerBase):
             len(self.sender_peer_ids),
         )
 
+        #### DEBUG
+        # """
+        # for i in range(2):
+        #     parts = self.tensor_part_container.get_raw_input_parts(i)
+        #     tot_param = 0
+        #     tot_size = 0
+        #     for part in parts:
+        #         tot_param += sum([t.numel() for t in part])
+        #         tot_size += sum([t.numel() * t.element_size() for t in part])
+        #     print(f"{i}: {tot_param} {tot_size/(1024**2) : .2f}MB")
+        # """
+
     def __repr__(self):
         return f"{self.__class__.__name__}({self.peer_id}, group_size={self.group_size})"
 
@@ -246,9 +258,11 @@ class AllReduceRunner(ServicerBase):
                 self.tensor_part_container.register_failed_reducer(peer_index)
                 raise
 
+    # tot_data_send = 0
     async def _generate_input_for_peer(self, peer_index: int) -> AsyncIterator[averaging_pb2.AveragingData]:
         parts_aiter = self.tensor_part_container.iterate_input_parts_for(peer_index)
         first_part = await anext(parts_aiter)
+        # self.tot_data_send += first_part.size“
         yield averaging_pb2.AveragingData(
             code=averaging_pb2.PART_FOR_AVERAGING,
             group_id=self.group_id,
@@ -256,6 +270,8 @@ class AllReduceRunner(ServicerBase):
             weight=self.weight,
         )
         async for part in parts_aiter:
+            # self.tot_data_send += part.size
+            # print(self.tot_data_send)
             yield averaging_pb2.AveragingData(tensor_part=part, weight=self.weight)
 
     async def rpc_aggregate_part(

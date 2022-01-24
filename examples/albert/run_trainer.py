@@ -20,6 +20,8 @@ from transformers.trainer_utils import is_main_process
 from hivemind import DHT, Float16Compression, Optimizer, get_dht_time
 from hivemind.utils.logging import get_logger, use_hivemind_log_handler
 
+from pyinstrument import Profiler
+
 import utils
 from arguments import (
     AlbertTrainingArguments,
@@ -179,6 +181,12 @@ class NoOpScheduler(LRSchedulerBase):
         logger.debug("Called NoOpScheduler.load_state_dict")
 
 
+class StopCallback(transformers.TrainerCallback):
+    def on_step_end(self, args, state, control, **kwargs):
+        if (state.global_step + 1) % 2048 == 0:
+            logger.info(f"{state.global_step}")
+            control.should_training_stop = True
+
 def main():
     parser = HfArgumentParser(
         (
@@ -306,7 +314,8 @@ def main():
                 local_public_key,
                 collaboration_args.statistics_expiration,
                 collaboration_args.backup_every_steps,
-            )
+            ),
+            # StopCallback(),
         ],
     )
     trainer.remove_callback(transformers.trainer_callback.PrinterCallback)
@@ -314,11 +323,18 @@ def main():
 
     # Training
     if training_args.do_train:
-        latest_checkpoint_dir = max(
-            Path(training_args.output_dir).glob("checkpoint*"), default=None, key=os.path.getctime
-        )
+        # latest_checkpoint_dir = max(
+            # Path(training_args.output_dir).glob("checkpoint*"), default=None, key=os.path.getctime
+        # )
 
-        trainer.train(model_path=latest_checkpoint_dir)
+        # profiler = Profiler()
+        # profiler.start()
+        # trainer.train(model_path=latest_checkpoint_dir)
+        # for _ in range(16):
+
+        trainer.train()
+        # profiler.stop()
+        # profiler.print(show_all=True, outfile='profile.html')
 
 
 if __name__ == "__main__":

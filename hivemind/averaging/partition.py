@@ -95,7 +95,7 @@ class TensorPartContainer:
     def get_raw_input_parts(self, peer_index: int) -> Tuple[torch.Tensor, ...]:
         """get non-serialized tensor parts for a peer at a given index"""
         assert not self._inputs_consumed_by_peer[peer_index], "input parts of a given peer are already deallocated."
-        self._inputs_consumed_by_peer[peer_index] = True
+        # self._inputs_consumed_by_peer[peer_index] = True
         input_parts = tuple(part for part, compression in self._input_parts_by_peer[peer_index])
         return input_parts
 

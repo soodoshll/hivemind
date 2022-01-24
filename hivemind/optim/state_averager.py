@@ -94,6 +94,7 @@ class TrainingStateAverager(DecentralizedAverager):
         **kwargs,
     ):
         average_opt_statistics = tuple(average_opt_statistics)
+        print(average_opt_statistics)
         assert all(isinstance(key, str) for key in average_opt_statistics)
         if reuse_tensors is None:
             reuse_tensors = offload_optimizer and not delta_rule_averaging
@@ -115,6 +116,7 @@ class TrainingStateAverager(DecentralizedAverager):
             param_groups, optimizer, scheduler, initialize_optimizer
         )
         self.opt_keys_for_averaging, self.extra_tensors = average_opt_statistics, extra_tensors
+        print("state averager keys:", self.opt_keys_for_averaging)
         self.sync_epoch_when_averaging = sync_epoch_when_averaging
         self.local_epoch = 0
 
