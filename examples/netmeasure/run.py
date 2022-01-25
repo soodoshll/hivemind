@@ -14,7 +14,8 @@ from pyinstrument import Profiler
 
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--initial_peers', nargs='+')
-parser.add_argument('--nparam', type=int, default=20_000_000)
+parser.add_argument('--nparam', type=int, default=20)
+parser.add_argument('--part_size', type=int, default=19)
 args = parser.parse_args()
 print(args.initial_peers)
 
@@ -47,7 +48,7 @@ print(args.initial_peers)
 # print(opt.state_dict()['state'][0].keys())
 
 
-model = nn.ParameterDict({"w": nn.Parameter(torch.zeros(args.nparam))})
+model = nn.ParameterDict({"w": nn.Parameter(torch.zeros(args.nparam * 1_000_000))})
 print(f"#param: {sum([param.data.numel() for param in model.parameters()])}")
 
 # distributed environment setting
@@ -57,7 +58,7 @@ print("Global IP:", hivemind.utils.networking.choose_ip_address(dht.get_visible_
 
 averager = GradientAverager(
     model.parameters(), dht=dht, prefix="test", target_group_size=2, reuse_grad_buffers=False, start=True,
-    part_size_bytes=2**25
+    part_size_bytes=2**args.part_size
 )
 
 control = averager.schedule_step(hivemind.get_dht_time() + 5)
