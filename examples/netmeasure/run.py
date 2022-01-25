@@ -56,7 +56,8 @@ print('\n'.join(str(addr) for addr in dht.get_visible_maddrs()))
 print("Global IP:", hivemind.utils.networking.choose_ip_address(dht.get_visible_maddrs()))
 
 averager = GradientAverager(
-    model.parameters(), dht=dht, prefix="test", target_group_size=2, reuse_grad_buffers=False, start=True
+    model.parameters(), dht=dht, prefix="test", target_group_size=2, reuse_grad_buffers=False, start=True,
+    part_size_bytes=2**25
 )
 
 control = averager.schedule_step(hivemind.get_dht_time() + 5)
