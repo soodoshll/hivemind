@@ -218,6 +218,7 @@ class AllReduceRunner(ServicerBase):
                 if peer_id not in self.active_senders and peer_id not in self.banned_senders:
                     await self._ban_sender(peer_id)
 
+    # @profile
     async def _communicate_with_peer(self, peer_id: PeerID):
         """Send a part of local tensors and metadata to a single peer, receive the average for that part of tensors"""
         peer_index = self.ordered_peer_ids.index(peer_id)
@@ -232,12 +233,14 @@ class AllReduceRunner(ServicerBase):
         else:
             try:
                 # logger.info(f"communication start")
-                start_t = time.time()
                 done_sending = asyncio.Event()
                 inputs_aiter = attach_event_on_finished(self._generate_input_for_peer(peer_index), done_sending)
+                start_t = time.time()
                 stream = await self._get_peer_stub(peer_id).rpc_aggregate_part(inputs_aiter)
+                logger.info(f"stream time {time.time() - start_t :.2f}s")
 
                 if self.should_delay_results(self.peer_id):
+                    print('wait here')
                     await done_sending.wait()
 
                 part_index = 0
@@ -252,6 +255,7 @@ class AllReduceRunner(ServicerBase):
                     # print(peer_id, type(msg), msg.ByteSize())
                     return ret, msg, msg.ByteSize()
                 tot_sz = 0
+                logger.info(f"communication bp0: {time.time() - start_t : .2f}s")
                 lock = asyncio.Lock()
                 async for delta, msg, sz in amap_in_executor(
                     _try_deserialize,
@@ -264,7 +268,7 @@ class AllReduceRunner(ServicerBase):
                     # logger.info(f"communication bp: {time.time() - start_t : .2f}")
                     part_index += 1
                 # logger.info(f"total message size: {tot_sz}")
-                # logger.info(f"communication bp1: {time.time() - start_t : .2f}")
+                logger.info(f"communication bp1: {time.time() - start_t : .2f}s")
                 if part_index != self.tensor_part_container.num_parts_by_peer[peer_index]:
                     raise AllreduceException(
                         f"peer {peer_id} sent {part_index} parts, but we expected "
@@ -278,6 +282,7 @@ class AllReduceRunner(ServicerBase):
 
     # tot_data_send = 0
     async def _generate_input_for_peer(self, peer_index: int) -> AsyncIterator[averaging_pb2.AveragingData]:
+        start_t = time.time()
         parts_aiter = self.tensor_part_container.iterate_input_parts_for(peer_index)
         first_part = await anext(parts_aiter)
         # self.tot_data_send += first_part.size“
@@ -290,7 +295,9 @@ class AllReduceRunner(ServicerBase):
         async for part in parts_aiter:
             # self.tot_data_send += part.size
             # print(self.tot_data_send)
-            yield averaging_pb2.AveragingData(tensor_part=part, weight=self.weight)
+            ret = averaging_pb2.AveragingData(tensor_part=part, weight=self.weight)
+            yield ret
+        # logger.info(f"generator input: {time.time() - start_t : .2f}s")
 
     async def rpc_aggregate_part(
         self, stream: AsyncIterator[averaging_pb2.AveragingData], context: P2PContext
@@ -302,7 +309,10 @@ class AllReduceRunner(ServicerBase):
             self.all_senders_started.set()
 
         try:
+            t0 = time.time()
             request: averaging_pb2.AveragingData = await asyncio.wait_for(anext(stream), self.sender_timeout)
+            logger.info(f"wait request for {time.time() - t0 : .2f}s")
+            # print(request)
             reason_to_reject = self._check_reasons_to_reject(request, context)
             if reason_to_reject:
                 yield reason_to_reject
@@ -311,6 +321,7 @@ class AllReduceRunner(ServicerBase):
             elif request.code == averaging_pb2.PART_FOR_AVERAGING:
                 stream = aiter_with_timeout(achain(as_aiter(request), stream), self.sender_timeout)
                 if not self.should_delay_results(context.remote_id):
+                    logger.info("should not dela")
                     async for msg in self._accumulate_parts_streaming(stream, sender_index):
                         yield msg
 
@@ -371,12 +382,14 @@ class AllReduceRunner(ServicerBase):
     async def _accumulate_parts_streaming(self, stream: AsyncIterator[averaging_pb2.AveragingData], sender_index: int):
         part_index = 0
         try:
+            start_t = time.time()
             loop = asyncio.get_event_loop()
             async for tensor_part, weight, part_compression in amap_in_executor(
                 lambda msg: (deserialize_torch_tensor(msg.tensor_part), msg.weight, msg.tensor_part.compression),
                 stream,
                 max_prefetch=self.tensor_part_container.prefetch,
             ):
+                logger.info(f"start processing {time.time() - start_t : .2f}s")
                 try:
                     averaged_part = await self.tensor_part_reducer.accumulate_part(
                         sender_index, part_index, tensor_part, weight=weight
@@ -390,6 +403,7 @@ class AllReduceRunner(ServicerBase):
                     None, lambda: serialize_torch_tensor(averaged_part - tensor_part, part_compression)
                 )
                 yield averaging_pb2.AveragingData(code=averaging_pb2.AVERAGED_PART, tensor_part=serialized_delta)
+            logger.info(f"all time {time.time() - start_t : .2f}s")
         finally:
             if part_index != self.tensor_part_reducer.num_parts:
                 await self._ban_sender(self.sender_peer_ids[sender_index])
