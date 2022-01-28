@@ -21,6 +21,8 @@ from hivemind.proto.p2pd_pb2 import RPCError
 from hivemind.utils.asyncio import as_aiter, asingle
 from hivemind.utils.logging import get_logger, golog_level_to_python, loglevel, python_level_to_golog
 
+import time
+
 logger = get_logger(__name__)
 
 
@@ -274,9 +276,12 @@ class P2P:
 
     @staticmethod
     async def receive_raw_data(reader: asyncio.StreamReader) -> bytes:
+        start_t = time.time()
         header = await reader.readexactly(P2P.HEADER_LEN)
         content_length = int.from_bytes(header, P2P.BYTEORDER)
         data = await reader.readexactly(content_length)
+        dur = time.time() - start_t
+        logger.info(f"receiver uses {dur: .2f}s | size: {content_length} | speed {content_length/dur/1e6 : .2f}MB/s")
         return data
 
     TInputProtobuf = TypeVar("TInputProtobuf")
