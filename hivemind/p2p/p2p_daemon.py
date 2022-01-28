@@ -281,7 +281,7 @@ class P2P:
         content_length = int.from_bytes(header, P2P.BYTEORDER)
         data = await reader.readexactly(content_length)
         dur = time.time() - start_t
-        logger.info(f"receiver uses {dur: .2f}s | size: {content_length} | speed {content_length/dur/1e6 : .2f}MB/s")
+        # logger.info(f"receiver uses {dur: .2f}s | size: {content_length} | speed {content_length/dur/1e6 : .2f}MB/s")
         return data
 
     TInputProtobuf = TypeVar("TInputProtobuf")

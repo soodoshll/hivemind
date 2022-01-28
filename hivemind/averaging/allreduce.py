@@ -389,7 +389,7 @@ class AllReduceRunner(ServicerBase):
                 stream,
                 max_prefetch=self.tensor_part_container.prefetch,
             ):
-                logger.info(f"start processing {time.time() - start_t : .2f}s")
+                # logger.info(f"start processing {time.time() - start_t : .2f}s")
                 try:
                     averaged_part = await self.tensor_part_reducer.accumulate_part(
                         sender_index, part_index, tensor_part, weight=weight
